@@ -1,5 +1,8 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PagamentoService } from '../../services/pagamento';
+import { CarrinhoService } from '../../../carrinho/services/carrinho';
+import { MetodoPagamento, StatusPagamento } from '../../../../core/models/pagamento';
 
 @Component({
   selector: 'app-pagamento-pix',
@@ -122,15 +125,78 @@ import { CommonModule } from '@angular/common';
     `,
   ],
 })
-export class PagamentoPixComponent {
+export class PagamentoPixComponent implements OnInit {
+  private pagamentoService = inject(PagamentoService);
+  private carrinhoService = inject(CarrinhoService);
   @Output() pagamentoRealizado = new EventEmitter<number>();
 
+  codigoPix = '00020126580014br.gov.bcb.pix...';
+  loading = false;
+  mensagemErro = '';
+
+  ngOnInit(): void {
+    this.gerarCodigoPix();
+  }
+
+  gerarCodigoPix(): void {
+    const carrinho = this.carrinhoService.obterCarrinho();
+
+    const pagamento = {
+      metodo: MetodoPagamento.PIX,
+      status: StatusPagamento.PENDENTE,
+      valor: carrinho.valorTotal,
+    };
+
+    this.pagamentoService.criar(pagamento).subscribe({
+      next: (pagamentoCriado) => {
+        if (pagamentoCriado.codigoPix) {
+          this.codigoPix = pagamentoCriado.codigoPix;
+        }
+      },
+      error: (erro) => {
+        this.mensagemErro = 'Erro ao gerar código PIX';
+      },
+    });
+  }
+
   copiarCodigo(): void {
-    alert('Código PIX copiado!');
+    navigator.clipboard.writeText(this.codigoPix);
   }
 
   simularPagamento(): void {
-    alert('Pagamento via PIX confirmado!');
-    this.pagamentoRealizado.emit(1);
+    this.loading = true;
+    this.mensagemErro = '';
+
+    const carrinho = this.carrinhoService.obterCarrinho();
+
+    const pagamento = {
+      metodo: MetodoPagamento.PIX,
+      status: StatusPagamento.PENDENTE,
+      valor: carrinho.valorTotal,
+      codigoPix: this.codigoPix,
+    };
+
+    this.pagamentoService.criar(pagamento).subscribe({
+      next: (pagamentoCriado) => {
+        if (pagamentoCriado.id) {
+          this.pagamentoService.processar(pagamentoCriado.id).subscribe({
+            next: (pagamentoProcessado) => {
+              this.loading = false;
+              if (pagamentoCriado.id) {
+                this.pagamentoRealizado.emit(pagamentoCriado.id);
+              }
+            },
+            error: (erro) => {
+              this.loading = false;
+              this.mensagemErro = 'Erro ao processar pagamento PIX';
+            },
+          });
+        }
+      },
+      error: (erro) => {
+        this.loading = false;
+        this.mensagemErro = 'Erro ao criar pagamento PIX';
+      },
+    });
   }
 }

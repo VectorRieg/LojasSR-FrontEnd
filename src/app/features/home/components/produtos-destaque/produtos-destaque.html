@@ -1,1 +1,38 @@
-<p>produtos-destaque works!</p>
+<div class="produtos-destaque-container">
+  <div class="destaque-header">
+    <h2>Produtos em Destaque</h2>
+    <button type="button" class="btn-ver-todos" (click)="verTodosProdutos()">
+      Ver Todos os Produtos
+    </button>
+  </div>
+
+  @if (carregando) {
+    <div class="loading">
+      <p>Carregando produtos...</p>
+    </div>
+  }
+
+  @if (erro) {
+    <div class="erro">
+      <p>{{ erro }}</p>
+      <button type="button" (click)="carregarProdutosDestaque()">Tentar Novamente</button>
+    </div>
+  }
+
+  @if (!carregando && !erro) {
+    <div class="produtos-grid">
+      @if (produtosDestaque.length === 0) {
+        <div class="vazio">
+          <p>Nenhum produto em destaque no momento.</p>
+        </div>
+      } @else {
+        @for (produto of produtosDestaque; track produto.id) {
+          <app-produto-card
+            [produto]="produto"
+            (adicionarCarrinho)="adicionarAoCarrinho($event)"
+          />
+        }
+      }
+    </div>
+  }
+</div>

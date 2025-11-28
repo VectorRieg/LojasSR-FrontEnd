@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProdutoService } from '../../services/produto';
+import { CarrinhoService } from '../../../carrinho/services/carrinho';
 import { Produto } from '../../../../core/models/produto';
 import { CurrencyPipe } from '../../../../shared/pipes/currency-pipe';
 
@@ -143,6 +144,7 @@ export class ProdutoDetalheComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private produtoService = inject(ProdutoService);
+  private carrinhoService = inject(CarrinhoService);
 
   produto?: Produto;
   loading: boolean = true;
@@ -169,8 +171,9 @@ export class ProdutoDetalheComponent implements OnInit {
   }
 
   adicionarAoCarrinho(): void {
-    console.log('Adicionar ao carrinho:', this.produto);
-    // Implementar lógica de adicionar ao carrinho
+    if (this.produto) {
+      this.carrinhoService.adicionarItem(this.produto, 1);
+    }
   }
 
   voltar(): void {
