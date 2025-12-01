@@ -188,7 +188,6 @@ export class CarrinhoListaComponent implements OnInit {
   }
 
   finalizarCompra(): void {
-    console.log('Finalizar compra');
-    // Navegar para página de pagamento
+    this.router.navigate(['/pagamento']);
   }
 }

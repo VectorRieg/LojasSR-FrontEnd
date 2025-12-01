@@ -1,5 +1,8 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PagamentoService } from '../../services/pagamento';
+import { CarrinhoService } from '../../../carrinho/services/carrinho';
+import { MetodoPagamento, StatusPagamento } from '../../../../core/models/pagamento';
 
 @Component({
   selector: 'app-pagamento-boleto',
@@ -130,8 +133,18 @@ import { CommonModule } from '@angular/common';
     `,
   ],
 })
-export class PagamentoBoletoComponent {
+export class PagamentoBoletoComponent implements OnInit {
+  private pagamentoService = inject(PagamentoService);
+  private carrinhoService = inject(CarrinhoService);
   @Output() pagamentoRealizado = new EventEmitter<number>();
+
+  codigoBarras = '34191.79001 01043.510047 91020.150008 1 84190026000';
+  loading = false;
+  mensagemErro = '';
+
+  ngOnInit(): void {
+    this.gerarBoleto();
+  }
 
   get dataVencimento(): string {
     const data = new Date();
@@ -139,8 +152,32 @@ export class PagamentoBoletoComponent {
     return data.toLocaleDateString('pt-BR');
   }
 
+  gerarBoleto(): void {
+    const carrinho = this.carrinhoService.obterCarrinho();
+    const dataVenc = new Date();
+    dataVenc.setDate(dataVenc.getDate() + 3);
+
+    const pagamento = {
+      metodo: MetodoPagamento.BOLETO,
+      status: StatusPagamento.PENDENTE,
+      valor: carrinho.valorTotal,
+      dataVencimento: dataVenc,
+    };
+
+    this.pagamentoService.criar(pagamento).subscribe({
+      next: (pagamentoCriado) => {
+        if (pagamentoCriado.codigoBarras) {
+          this.codigoBarras = pagamentoCriado.codigoBarras;
+        }
+      },
+      error: (erro) => {
+        this.mensagemErro = 'Erro ao gerar boleto';
+      },
+    });
+  }
+
   copiarCodigo(): void {
-    alert('Código de barras copiado!');
+    navigator.clipboard.writeText(this.codigoBarras);
   }
 
   imprimirBoleto(): void {
@@ -148,7 +185,42 @@ export class PagamentoBoletoComponent {
   }
 
   simularPagamento(): void {
-    alert('Pagamento via Boleto confirmado!');
-    this.pagamentoRealizado.emit(1);
+    this.loading = true;
+    this.mensagemErro = '';
+
+    const carrinho = this.carrinhoService.obterCarrinho();
+    const dataVenc = new Date();
+    dataVenc.setDate(dataVenc.getDate() + 3);
+
+    const pagamento = {
+      metodo: MetodoPagamento.BOLETO,
+      status: StatusPagamento.PENDENTE,
+      valor: carrinho.valorTotal,
+      codigoBarras: this.codigoBarras,
+      dataVencimento: dataVenc,
+    };
+
+    this.pagamentoService.criar(pagamento).subscribe({
+      next: (pagamentoCriado) => {
+        if (pagamentoCriado.id) {
+          this.pagamentoService.processar(pagamentoCriado.id).subscribe({
+            next: (pagamentoProcessado) => {
+              this.loading = false;
+              if (pagamentoCriado.id) {
+                this.pagamentoRealizado.emit(pagamentoCriado.id);
+              }
+            },
+            error: (erro) => {
+              this.loading = false;
+              this.mensagemErro = 'Erro ao processar pagamento via Boleto';
+            },
+          });
+        }
+      },
+      error: (erro) => {
+        this.loading = false;
+        this.mensagemErro = 'Erro ao criar pagamento via Boleto';
+      },
+    });
   }
 }

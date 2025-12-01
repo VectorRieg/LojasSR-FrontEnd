@@ -152,7 +152,6 @@ export class PagamentoFormComponent {
   }
 
   onPagamentoRealizado(pagamentoId: number): void {
-    console.log('Pagamento realizado:', pagamentoId);
-    // Navegar para confirmação
+    this.router.navigate(['/pagamento/confirmacao', pagamentoId]);
   }
 }

@@ -1,1 +1,51 @@
-<p>banner works!</p>
+<div class="banner-container">
+  <div class="banner-carousel">
+    @for (banner of banners; track banner.id; let i = $index) {
+      <div class="banner-slide" [class.active]="i === bannerAtual">
+        <div class="banner-imagem" [style.background-image]="'url(' + banner.imagem + ')'">
+          <div class="banner-overlay"></div>
+          <div class="banner-conteudo">
+            <h1 class="banner-titulo">{{ banner.titulo }}</h1>
+            <p class="banner-subtitulo">{{ banner.subtitulo }}</p>
+            @if (banner.link && banner.textoBotao) {
+              <a [routerLink]="banner.link" class="banner-botao">
+                {{ banner.textoBotao }}
+              </a>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Controles de Navegação -->
+    <button
+      type="button"
+      class="banner-controle banner-anterior"
+      (click)="bannerAnterior()"
+      aria-label="Banner anterior"
+    >
+      ‹
+    </button>
+    <button
+      type="button"
+      class="banner-controle banner-proximo"
+      (click)="proximoBanner()"
+      aria-label="Próximo banner"
+    >
+      ›
+    </button>
+
+    <!-- Indicadores -->
+    <div class="banner-indicadores">
+      @for (banner of banners; track banner.id; let i = $index) {
+        <button
+          type="button"
+          class="indicador"
+          [class.active]="i === bannerAtual"
+          (click)="irParaBanner(i)"
+          [attr.aria-label]="'Ir para banner ' + (i + 1)"
+        ></button>
+      }
+    </div>
+  </div>
+</div>

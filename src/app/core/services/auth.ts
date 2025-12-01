@@ -16,6 +16,15 @@ interface LoginResponse {
   email: string;
 }
 
+interface RegistroResponse {
+  token: string;
+  usuario: {
+    userId: number;
+    nome: string;
+    email: string;
+  };
+}
+
 interface Usuario {
   nome: string;
   email: string;
@@ -40,9 +49,9 @@ export class AuthService {
       })
     );
   }
-  /*
-  registrar(usuario: Usuario): Observable<any> {
-    return this.http.post(`${this.apiUrl}/registro`, usuario).pipe(
+
+  registrar(usuario: Usuario): Observable<RegistroResponse> {
+    return this.http.post<RegistroResponse>(`${this.apiUrl}/registro`, usuario).pipe(
       tap((response) => {
         if (response.token) {
           this.storage.saveToken(response.token);
@@ -51,7 +60,6 @@ export class AuthService {
       })
     );
   }
-  */
 
   logout(): void {
     this.storage.clear();

@@ -1,1 +1,92 @@
-<p>produto-filtro works!</p>
+<div class="produto-filtro-container">
+  <form [formGroup]="filtroForm" class="filtro-form">
+    <!-- Busca -->
+    <div class="filtro-group filtro-busca">
+      <label for="busca">Buscar Produto</label>
+      <input
+        type="text"
+        id="busca"
+        formControlName="busca"
+        placeholder="Digite o nome do produto..."
+      >
+    </div>
+
+    <!-- Categoria -->
+    <div class="filtro-group">
+      <label for="categoria">Categoria</label>
+      <select id="categoria" formControlName="categoria">
+        @for (categoria of categorias; track categoria) {
+          <option [value]="categoria">{{ categoria }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Faixa de Preço -->
+    <div class="filtro-group filtro-preco">
+      <label>Faixa de Preço</label>
+      <div class="preco-inputs">
+        <div class="preco-input">
+          <label for="precoMin">Mínimo</label>
+          <input
+            type="number"
+            id="precoMin"
+            formControlName="precoMin"
+            placeholder="R$ 0,00"
+            min="0"
+            step="0.01"
+          >
+        </div>
+        <span class="preco-separador">até</span>
+        <div class="preco-input">
+          <label for="precoMax">Máximo</label>
+          <input
+            type="number"
+            id="precoMax"
+            formControlName="precoMax"
+            placeholder="R$ 9999,99"
+            min="0"
+            step="0.01"
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Ordenação -->
+    <div class="filtro-group">
+      <label for="ordenarPor">Ordenar por</label>
+      <select id="ordenarPor" formControlName="ordenarPor">
+        @for (opcao of opcoesOrdenacao; track opcao.value) {
+          <option [value]="opcao.value">{{ opcao.label }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Checkboxes -->
+    <div class="filtro-group filtro-checkboxes">
+      <div class="checkbox-item">
+        <input
+          type="checkbox"
+          id="apenasPromocao"
+          formControlName="apenasPromocao"
+        >
+        <label for="apenasPromocao">Apenas Promoções</label>
+      </div>
+
+      <div class="checkbox-item">
+        <input
+          type="checkbox"
+          id="apenasDisponiveis"
+          formControlName="apenasDisponiveis"
+        >
+        <label for="apenasDisponiveis">Apenas Disponíveis</label>
+      </div>
+    </div>
+
+    <!-- Botão Limpar -->
+    <div class="filtro-acoes">
+      <button type="button" class="btn-limpar" (click)="limparFiltros()">
+        Limpar Filtros
+      </button>
+    </div>
+  </form>
+</div>

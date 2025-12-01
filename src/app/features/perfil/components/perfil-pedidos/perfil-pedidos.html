@@ -1,1 +1,198 @@
-<p>perfil-pedidos works!</p>
+<div class="perfil-pedidos-container">
+  <h2>Meus Pedidos</h2>
+
+  <!-- Mensagem de Feedback -->
+  @if (mensagem) {
+    <div class="mensagem" [class.sucesso]="mensagemTipo === 'sucesso'" [class.erro]="mensagemTipo === 'erro'">
+      {{ mensagem }}
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (carregando && !pedidoSelecionado) {
+    <div class="loading">Carregando...</div>
+  }
+
+  <!-- Lista de Pedidos -->
+  @if (!pedidoSelecionado) {
+    <div class="pedidos-lista">
+      @if (pedidos.length === 0 && !carregando) {
+        <div class="vazio">
+          <p>Você ainda não possui pedidos.</p>
+        </div>
+      }
+
+      @for (pedido of pedidos; track pedido.id) {
+        <div class="pedido-card">
+          <div class="pedido-header">
+            <div class="pedido-numero">
+              <strong>Pedido #{{ pedido.numeroPedido }}</strong>
+            </div>
+            <div class="pedido-status" [ngClass]="getStatusClass(pedido.status)">
+              {{ getStatusTexto(pedido.status) }}
+            </div>
+          </div>
+
+          <div class="pedido-info">
+            <div class="pedido-data">
+              <span class="label">Data:</span>
+              <span>{{ pedido.dataPedido | dateFormat }}</span>
+            </div>
+
+            @if (pedido.dataPrevisaoEntrega) {
+              <div class="pedido-previsao">
+                <span class="label">Previsão de Entrega:</span>
+                <span>{{ pedido.dataPrevisaoEntrega | dateFormat }}</span>
+              </div>
+            }
+
+            <div class="pedido-total">
+              <span class="label">Total:</span>
+              <span class="valor">{{ pedido.valorTotal | currency }}</span>
+            </div>
+
+            <div class="pedido-itens-resumo">
+              <span class="label">{{ pedido.itens.length }} {{ pedido.itens.length === 1 ? 'item' : 'itens' }}</span>
+            </div>
+          </div>
+
+          <div class="pedido-acoes">
+            <button type="button" class="btn-primary" (click)="verDetalhes(pedido)" [disabled]="carregando">
+              Ver Detalhes
+            </button>
+
+            @if (podeCancelar(pedido)) {
+              <button
+                type="button"
+                class="btn-danger"
+                (click)="cancelarPedido(pedido)"
+                [disabled]="carregando"
+              >
+                Cancelar Pedido
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Detalhes do Pedido -->
+  @if (pedidoSelecionado) {
+    <div class="pedido-detalhes">
+      <div class="detalhes-header">
+        <button type="button" class="btn-voltar" (click)="fecharDetalhes()">
+          ← Voltar para a lista
+        </button>
+        <h3>Pedido #{{ pedidoSelecionado.numeroPedido }}</h3>
+      </div>
+
+      <div class="detalhes-status">
+        <div class="status-badge" [ngClass]="getStatusClass(pedidoSelecionado.status)">
+          {{ getStatusTexto(pedidoSelecionado.status) }}
+        </div>
+      </div>
+
+      <div class="detalhes-grid">
+        <!-- Informações do Pedido -->
+        <div class="detalhes-section">
+          <h4>Informações do Pedido</h4>
+          <div class="info-row">
+            <span class="label">Data do Pedido:</span>
+            <span>{{ pedidoSelecionado.dataPedido | dateFormat }}</span>
+          </div>
+          @if (pedidoSelecionado.dataPrevisaoEntrega) {
+            <div class="info-row">
+              <span class="label">Previsão de Entrega:</span>
+              <span>{{ pedidoSelecionado.dataPrevisaoEntrega | dateFormat }}</span>
+            </div>
+          }
+          @if (pedidoSelecionado.dataEntrega) {
+            <div class="info-row">
+              <span class="label">Data de Entrega:</span>
+              <span>{{ pedidoSelecionado.dataEntrega | dateFormat }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Endereço de Entrega -->
+        <div class="detalhes-section">
+          <h4>Endereço de Entrega</h4>
+          @if (pedidoSelecionado.enderecoEntrega) {
+            <p>{{ pedidoSelecionado.enderecoEntrega }}</p>
+          }
+          @if (pedidoSelecionado.cidade && pedidoSelecionado.estado) {
+            <p>{{ pedidoSelecionado.cidade }} - {{ pedidoSelecionado.estado }}</p>
+          }
+          @if (pedidoSelecionado.cep) {
+            <p>CEP: {{ pedidoSelecionado.cep }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Itens do Pedido -->
+      <div class="detalhes-section">
+        <h4>Itens do Pedido</h4>
+        <div class="itens-lista">
+          @for (item of pedidoSelecionado.itens; track item.produto?.id) {
+            <div class="item-card">
+              <div class="item-info">
+                <span class="item-nome">{{ item.produto?.nome }}</span>
+                <span class="item-quantidade">Qtd: {{ item.quantidade }}</span>
+              </div>
+              <div class="item-valores">
+                <span class="item-preco-unitario">{{ item.precoUnitario | currency }}</span>
+                <span class="item-subtotal">{{ item.subtotal | currency }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Resumo de Valores -->
+      <div class="detalhes-section valores-resumo">
+        <h4>Resumo</h4>
+        <div class="valor-row">
+          <span class="label">Subtotal:</span>
+          <span>{{ pedidoSelecionado.subtotal | currency }}</span>
+        </div>
+        <div class="valor-row">
+          <span class="label">Frete:</span>
+          <span>{{ pedidoSelecionado.valorFrete | currency }}</span>
+        </div>
+        @if (pedidoSelecionado.desconto && pedidoSelecionado.desconto > 0) {
+          <div class="valor-row desconto">
+            <span class="label">Desconto:</span>
+            <span>-{{ pedidoSelecionado.desconto | currency }}</span>
+          </div>
+        }
+        <div class="valor-row total">
+          <span class="label">Total:</span>
+          <span class="valor-total">{{ pedidoSelecionado.valorTotal | currency }}</span>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      @if (pedidoSelecionado.observacoes) {
+        <div class="detalhes-section">
+          <h4>Observações</h4>
+          <p>{{ pedidoSelecionado.observacoes }}</p>
+        </div>
+      }
+
+      <!-- Ações -->
+      <div class="detalhes-acoes">
+        @if (podeCancelar(pedidoSelecionado)) {
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="cancelarPedido(pedidoSelecionado)"
+            [disabled]="carregando"
+          >
+            Cancelar Pedido
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,6 +1,9 @@
 import { Component, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { PagamentoService } from '../../services/pagamento';
+import { CarrinhoService } from '../../../carrinho/services/carrinho';
+import { MetodoPagamento, StatusPagamento } from '../../../../core/models/pagamento';
 
 @Component({
   selector: 'app-pagamento-cartao',
@@ -121,10 +124,13 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 })
 export class PagamentoCartaoComponent {
   private fb = inject(FormBuilder);
+  private pagamentoService = inject(PagamentoService);
+  private carrinhoService = inject(CarrinhoService);
   @Output() pagamentoRealizado = new EventEmitter<number>();
 
   cartaoForm: FormGroup;
   loading: boolean = false;
+  mensagemErro = '';
 
   constructor() {
     this.cartaoForm = this.fb.group({
@@ -137,14 +143,46 @@ export class PagamentoCartaoComponent {
   }
 
   processar(): void {
-    if (this.cartaoForm.valid) {
-      this.loading = true;
-
-      setTimeout(() => {
-        alert('Pagamento aprovado!');
-        this.loading = false;
-        this.pagamentoRealizado.emit(1);
-      }, 2000);
+    if (this.cartaoForm.invalid) {
+      this.cartaoForm.markAllAsTouched();
+      return;
     }
+
+    this.loading = true;
+    this.mensagemErro = '';
+
+    const carrinho = this.carrinhoService.obterCarrinho();
+    const dadosCartao = this.cartaoForm.value;
+
+    const pagamento = {
+      metodo: MetodoPagamento.CARTAO_CREDITO,
+      status: StatusPagamento.PENDENTE,
+      valor: carrinho.valorTotal,
+      numeroCartao: dadosCartao.numeroCartao.slice(-4), // Apenas os últimos 4 dígitos
+      parcelas: parseInt(dadosCartao.parcelas),
+    };
+
+    this.pagamentoService.criar(pagamento).subscribe({
+      next: (pagamentoCriado) => {
+        if (pagamentoCriado.id) {
+          this.pagamentoService.processar(pagamentoCriado.id).subscribe({
+            next: (pagamentoProcessado) => {
+              this.loading = false;
+              if (pagamentoCriado.id) {
+                this.pagamentoRealizado.emit(pagamentoCriado.id);
+              }
+            },
+            error: (erro) => {
+              this.loading = false;
+              this.mensagemErro = 'Erro ao processar pagamento. Tente novamente.';
+            },
+          });
+        }
+      },
+      error: (erro) => {
+        this.loading = false;
+        this.mensagemErro = 'Erro ao criar pagamento. Tente novamente.';
+      },
+    });
   }
 }
